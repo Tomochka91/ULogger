@@ -1,0 +1,483 @@
+{
+  "db": {
+    "host": "192.168.1.60",
+    "port": 5432,
+    "database": "fishing",
+    "user": "db_user",
+    "password": "123456",
+    "sslmode": "prefer"
+  },
+  "connections": [
+    {
+      "id": 1,
+      "name": "test",
+      "type": "easy_serial",
+      "enabled": false,
+      "autostart": false,
+      "db_user": "db_user",
+      "db_password": "123456",
+      "table_name": "cpp",
+      "query_template": "INSERT INTO cpp (value) VALUES ({value})",
+      "easy_serial": {
+        "port": {
+          "port": "/dev/ttyUSB3",
+          "baudrate": 115200,
+          "databits": 8,
+          "parity": "Even",
+          "stopbits": 1.0,
+          "flowcontrol": "None",
+          "autoconnect": true,
+          "timeout": 1.0
+        },
+        "parser": {
+          "preamble": null,
+          "terminator": "\\n",
+          "separator": ";",
+          "encoding": "utf-8",
+          "fields": [
+            {
+              "index": 0,
+              "name": "value_0",
+              "type": "string",
+              "format": null
+            }
+          ]
+        }
+      },
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": null,
+      "modbus_tcp": null
+    },
+    {
+      "id": 2,
+      "name": "test_template",
+      "type": "easy_serial",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": {
+        "port": {
+          "port": "/dev/ttyUSB4",
+          "baudrate": 9600,
+          "databits": 8,
+          "parity": "None",
+          "stopbits": 1.0,
+          "flowcontrol": "None",
+          "autoconnect": true,
+          "timeout": 1.0
+        },
+        "parser": {
+          "preamble": null,
+          "terminator": "\n",
+          "separator": ";",
+          "encoding": "utf-8",
+          "fields": []
+        }
+      },
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": null,
+      "modbus_tcp": null
+    },
+    {
+      "id": 3,
+      "name": "test_template_2",
+      "type": "easy_serial",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": {
+        "port": {
+          "port": "/dev/ttyUSB5",
+          "baudrate": 9600,
+          "databits": 8,
+          "parity": "None",
+          "stopbits": 1.0,
+          "flowcontrol": "None",
+          "autoconnect": true,
+          "timeout": 1.0
+        },
+        "parser": {
+          "preamble": null,
+          "terminator": "\n",
+          "separator": ";",
+          "encoding": "utf-8",
+          "fields": []
+        }
+      },
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": null,
+      "modbus_tcp": null
+    },
+    {
+      "id": 4,
+      "name": "Modbus Test",
+      "type": "modbus_rtu",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": null,
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": {
+        "port": {
+          "port": "/dev/ttyUSB6",
+          "baudrate": 9600,
+          "databits": 8,
+          "parity": "None",
+          "stopbits": 1.0,
+          "flowcontrol": "None",
+          "autoconnect": true,
+          "timeout": 1.0
+        },
+        "poll_interval": 1.0,
+        "slaves": [
+          {
+            "slave_id": 1,
+            "slave_name": "slave_1",
+            "variables": [
+              {
+                "name": "var1",
+                "address": 0,
+                "encoding": "f32_abcd",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              },
+              {
+                "name": "var2",
+                "address": 2,
+                "encoding": "f32_cdab",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              },
+              {
+                "name": "var3",
+                "address": 4,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              }
+            ]
+          }
+        ]
+      },
+      "modbus_tcp": null
+    },
+    {
+      "id": 8,
+      "name": "бам",
+      "type": "modbus_rtu",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": null,
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": {
+        "port": {
+          "port": "/dev/ttyUSB10",
+          "baudrate": 9600,
+          "databits": 8,
+          "parity": "None",
+          "stopbits": 1.0,
+          "flowcontrol": "None",
+          "autoconnect": true,
+          "timeout": 1.0
+        },
+        "poll_interval": 1.0,
+        "slaves": [
+          {
+            "slave_id": 2,
+            "slave_name": "slave_2",
+            "variables": []
+          }
+        ]
+      },
+      "modbus_tcp": null
+    },
+    {
+      "id": 9,
+      "name": "Modbus TCP test",
+      "type": "modbus_tcp",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": null,
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": null,
+      "modbus_tcp": {
+        "host": {
+          "address": "0.0.0.0",
+          "port": 1502,
+          "autoconnect": true,
+          "timeout": 1.0
+        },
+        "poll_interval": 1.0,
+        "slaves": [
+          {
+            "slave_id": 1,
+            "slave_name": "slave_1",
+            "variables": [
+              {
+                "name": "var1",
+                "address": 0,
+                "encoding": "f32_abcd",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              },
+              {
+                "name": "var2",
+                "address": 2,
+                "encoding": "f32_cdab",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              },
+              {
+                "name": "var3",
+                "address": 4,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "name": "Изик финал",
+      "type": "easy_serial",
+      "enabled": false,
+      "autostart": false,
+      "db_user": "123",
+      "db_password": "123",
+      "table_name": "123",
+      "query_template": "Insert InsertInsertInsertInsertInsertInsertInsertInsertInsert",
+      "easy_serial": {
+        "port": {
+          "port": "/dev/ttyUSB1",
+          "baudrate": 115200,
+          "databits": 6,
+          "parity": "Odd",
+          "stopbits": 2.0,
+          "flowcontrol": "RTSCTS",
+          "autoconnect": true,
+          "timeout": 0.4
+        },
+        "parser": {
+          "preamble": "2",
+          "terminator": "\\n",
+          "separator": ";",
+          "encoding": "utf-8",
+          "fields": [
+            {
+              "index": 4,
+              "name": "2пывук",
+              "type": "float",
+              "format": ""
+            }
+          ]
+        }
+      },
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": null,
+      "modbus_tcp": null
+    },
+    {
+      "id": 14,
+      "name": "Мобик РТУ",
+      "type": "modbus_rtu",
+      "enabled": false,
+      "autostart": false,
+      "db_user": "ц",
+      "db_password": "ц",
+      "table_name": "ц",
+      "query_template": null,
+      "easy_serial": null,
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": {
+        "port": {
+          "port": "/dev/ttyUSB1",
+          "baudrate": 230400,
+          "databits": 8,
+          "parity": "Space",
+          "stopbits": 1.0,
+          "flowcontrol": "XONXOFF",
+          "autoconnect": true,
+          "timeout": 5.66
+        },
+        "poll_interval": 5.6,
+        "slaves": [
+          {
+            "slave_id": 2,
+            "slave_name": "45вап",
+            "variables": [
+              {
+                "name": "пр",
+                "address": 3,
+                "encoding": "s32_scaled_cdab",
+                "k": 45.33,
+                "b": 1.22,
+                "default": null
+              },
+              {
+                "name": "67868",
+                "address": 0,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              }
+            ]
+          },
+          {
+            "slave_id": 1,
+            "slave_name": "",
+            "variables": [
+              {
+                "name": "",
+                "address": 0,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              }
+            ]
+          }
+        ]
+      },
+      "modbus_tcp": null
+    },
+    {
+      "id": 15,
+      "name": "Мобик ТСР",
+      "type": "modbus_tcp",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": null,
+      "mbox": null,
+      "mbox_counter": null,
+      "modbus_rtu": null,
+      "modbus_tcp": {
+        "host": {
+          "address": "192.46.21.3",
+          "port": 1368,
+          "autoconnect": false,
+          "timeout": 1.44
+        },
+        "poll_interval": 1.56,
+        "slaves": [
+          {
+            "slave_id": 45,
+            "slave_name": "ррр",
+            "variables": [
+              {
+                "name": "вив",
+                "address": 4,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              },
+              {
+                "name": "",
+                "address": 0,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              }
+            ]
+          },
+          {
+            "slave_id": 6,
+            "slave_name": "вр",
+            "variables": [
+              {
+                "name": "ып",
+                "address": 5,
+                "encoding": "u16",
+                "k": 1.0,
+                "b": 0.0,
+                "default": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "name": "каунтертест",
+      "type": "mbox_counter",
+      "enabled": false,
+      "autostart": false,
+      "db_user": null,
+      "db_password": null,
+      "table_name": null,
+      "query_template": null,
+      "easy_serial": null,
+      "mbox": null,
+      "mbox_counter": {
+        "port": {
+          "port": "/dev/ttyUSB1",
+          "baudrate": 57600,
+          "databits": 8,
+          "parity": "None",
+          "stopbits": 1.0,
+          "flowcontrol": "None",
+          "autoconnect": false,
+          "timeout": 1.0
+        },
+        "poll_interval": 1.23,
+        "devices": [
+          {
+            "device_id": 1,
+            "name": "dfghh",
+            "serial": 352,
+            "enabled": true
+          },
+          {
+            "device_id": 3,
+            "name": "dfg",
+            "serial": 34343,
+            "enabled": true
+          }
+        ]
+      },
+      "modbus_rtu": null,
+      "modbus_tcp": null
+    }
+  ]
+}

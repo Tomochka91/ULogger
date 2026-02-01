@@ -1,0 +1,14 @@
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (width <= 768px) {
+  .section h2 {
+    display: none;
+  }
+
+  .section form {
+    margin-top: 0;
+  }
+}

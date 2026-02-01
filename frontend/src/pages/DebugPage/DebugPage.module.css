@@ -1,0 +1,13 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-standart);
+  flex: 1;
+  min-height: 0;
+}
+
+@media (width <= 768px) {
+  .section h2 {
+    display: none;
+  }
+}

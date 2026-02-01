@@ -1,0 +1,31 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+}
+
+.logo {
+  font-family: "Manrope", sans-serif;
+  font-weight: var(--font-weight-8);
+  font-size: var(--logo-font-size-adaptive);
+  line-height: var(--line-height-standart);
+}
+
+a:focus-visible {
+  outline: 1px solid var(--color-jungle-green);
+  outline-offset: 0.5rem;
+}
+
+.accent {
+  color: var(--color-jungle-green);
+}
+
+.secondary {
+  color: var(--color-gunmetal);
+}
+
+@media (width<=768px) {
+  a {
+    grid-column: 1 /2;
+  }
+}

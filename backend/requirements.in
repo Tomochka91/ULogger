@@ -1,0 +1,56 @@
+# =========================
+# Backend / API
+# =========================
+fastapi
+uvicorn
+starlette
+
+pydantic
+pydantic-settings
+SQLAlchemy
+
+requests
+python-dotenv
+
+
+# =========================
+# Database
+# =========================
+psycopg-binary
+
+
+# =========================
+# Devices / Industrial IO
+# =========================
+pyserial
+pymodbus
+pythonnet
+
+
+# =========================
+# Desktop shell / UI
+# =========================
+pywebview
+pystray
+
+# legacy / optional
+Eel
+bottle
+bottle-websocket
+gevent
+gevent-websocket
+
+
+# =========================
+# Build / Packaging
+# =========================
+pyinstaller
+pyinstaller-hooks-contrib
+auto-py-to-exe
+
+
+# =========================
+# Development / Testing
+# =========================
+pytest
+Pygments

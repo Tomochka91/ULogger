@@ -1,0 +1,51 @@
+@font-face {
+  font-display: swap;
+  font-family: "Geologica";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Geologica Regular"),
+    url("./Geologica-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "Geologica";
+  font-style: normal;
+  font-weight: 200;
+  src: local("Geologica Extra Light"),
+    url("./Geologica-ExtraLight.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "Geologica";
+  font-style: normal;
+  font-weight: 100;
+  src: local("Geologica Thin"), url("./Geologica-Thin.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 800;
+  src: local("Manrope ExtraBold"),
+    url("./Manrope-ExtraBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 600;
+  src: local("Manrope Semibold"),
+    url("./Manrope-SemiBold.ttf") format("truetype");
+}
+
+@font-face {
+  font-display: swap;
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 300;
+  src: local("Manrope Light"), url("./Manrope-Light.ttf") format("truetype");
+}
