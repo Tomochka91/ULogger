@@ -1,3 +1,5 @@
+import { useFormContext, useWatch } from "react-hook-form";
+
 import { Box } from "@mui/material";
 
 import { EasySerialSettings } from "./easy-serial/EasySerialSettings";
@@ -6,41 +8,47 @@ import { ModbusRtuSettings } from "./modbus/ModbusRtuSettings";
 import { ModbusTcpSettings } from "./modbus/ModbusTcpSettings";
 import { MboxCounterSettings } from "./mbox/MboxCounterSettings";
 import type { LoggerTypeRegistry } from "../../../types";
+import type { LoggerFormValues } from "./loggerForm.types";
 
 /**
  * src/shared/components/form/AddLoggerForm/TypeSettings.tsx
  *
  * Logger type settings dispatcher.
  *
- * This module selects and renders the appropriate
- * settings UI based on the selected logger type.
+ * This module dynamically renders logger-specific configuration
+ * sections based on the currently selected logger type.
  *
  * Responsibilities:
- * - Act as a single entry point for all logger-specific settings
- * - Route logger type → corresponding settings container
+ * - Subscribe to the `type` field in the form state
+ * - Render the corresponding settings component
+ * - Provide a consistent layout wrapper for all logger-specific tabs
  *
- * Design notes:
- * - The component itself contains no form logic
- * - All form state handling is delegated to child components
- */
-
-interface TypeSettingsProps {
-  type: LoggerTypeRegistry;
-}
-
-/* -------------------------------- Component -------------------------------- */
-/**
- * TypeSettings
+ * Data flow:
+ * - Uses `useFormContext` to access RHF control
+ * - Subscribes to `type` via `useWatch({ name: "type" })`
+ * - Delegates all form logic to the selected child settings component
  *
- * Wrapper component for logger-specific settings.
+ * Design / performance notes:
+ * - The component intentionally subscribes only to `type`,
+ *   avoiding full-form subscriptions.
+ * - Extracted to isolate re-renders caused by logger type switching.
+ * - Child components (EasySerialSettings, MboxSettings, etc.)
+ *   are responsible for their own field subscriptions.
  *
  * Behavior:
- * - If `type` is not defined, nothing is rendered
- * - Otherwise, renders a styled container with
- *   settings for the selected logger type
+ * - If `type` is undefined → renders nothing
+ * - If `type` changes → previous settings unmount, new settings mount
+ *
+ * Extensibility:
+ * - To add a new logger type:
+ *   1. Implement the corresponding settings component
+ *   2. Add a new case to `renderSettings`
  */
 
-export function TypeSettings({ type }: TypeSettingsProps) {
+export function TypeSettings() {
+  const { control } = useFormContext<LoggerFormValues>();
+  const type = useWatch({ control, name: "type" });
+
   if (!type) return null;
 
   return (

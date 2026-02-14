@@ -4,6 +4,7 @@ import {
   useReducer,
   type PropsWithChildren,
 } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 import { debugReducer, initialState } from "./debugReducer";
 import type {
@@ -60,7 +61,7 @@ export function DebugProvider({ children }: PropsWithChildren) {
       source?: DebugMessageSource;
     }) => {
       const msg: DebugMessage = {
-        id: crypto.randomUUID(),
+        id: uuidv4(),
         text: payload.text,
         level: payload.level ?? "info",
         source: payload.source ?? "front",
@@ -69,7 +70,7 @@ export function DebugProvider({ children }: PropsWithChildren) {
 
       dispatch({ type: "ADD_MESSAGE", payload: msg });
     },
-    []
+    [],
   );
 
   /**

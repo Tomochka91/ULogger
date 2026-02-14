@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { Box, Paper, Stack, Typography } from "@mui/material";
 
@@ -14,25 +14,25 @@ import type { LoggerFormValues } from "../loggerForm.types";
  *
  * EasySerial parser test panel.
  *
- * This module provides an interactive UI for testing
- * EasySerial parser settings against raw input text.
+ * Interactive UI for testing EasySerial parser settings against raw input text.
  *
  * Responsibilities:
- * - Read current parser configuration from form state
- * - Allow user to input raw serial text
- * - Invoke backend parser test via `useEasySerialParserTest`
- * - Display parsed output or error message
+ * - Read the current EasySerial parser configuration from RHF form state
+ * - Accept raw serial text input from the user
+ * - Call backend "test parser" endpoint via `useEasySerialParserTest`
+ * - Render parsed output (pretty JSON) or a backend error message
  *
  * Data flow:
- * - Reads full form state via `useFormContext`
- * - Maps form values to backend parser settings using
- *   `mapParserFormToSettings`
- * - Sends `{ raw_text, parser_settings }` to test endpoint
+ * - Reads ONLY the `easy_serial.parser` subtree using `getValues("easy_serial.parser")`
+ *   to avoid pulling the entire form object (important for large forms/perf).
+ * - Maps parser form subtree to backend DTO via `mapParserFormToSettings`
+ * - Sends `{ raw_text, parser_settings }` to the test endpoint
  *
  * Design notes:
- * - Local component state is used for raw input text.
- * - Output is memoized to avoid unnecessary re-renders.
- * - This component is EasySerial-specific and used inside `FramerTab`.
+ * - Local component state is used for raw text input.
+ * - `handleTest` is memoized with `useCallback` to keep a stable handler reference.
+ * - Output formatting is memoized with `useMemo` to avoid recomputing JSON on re-renders.
+ * - Does not mutate any form state; this is a pure "helper tool" for configuration.
  */
 
 /* -------------------------------- Component -------------------------------- */
@@ -69,14 +69,15 @@ export function TestEasySerialParser() {
    *
    * Collects current form values and triggers parser test.
    */
-  const handleTest = () => {
-    const values = getValues();
+  const handleTest = useCallback(() => {
+    // Perf: read only the parser subtree instead of the whole form state
+    const parser = getValues("easy_serial.parser");
 
     testParser({
       raw_text: rawText,
-      parser_settings: mapParserFormToSettings(values),
+      parser_settings: mapParserFormToSettings(parser),
     });
-  };
+  }, [getValues, rawText, testParser]);
 
   /**
    * output

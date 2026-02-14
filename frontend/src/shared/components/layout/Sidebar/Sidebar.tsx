@@ -37,7 +37,7 @@ export function Sidebar() {
       <Logo />
       <MainNav />
       <div className={styles["sidebar-footer"]}>
-        <span>Fish Logger v1.0</span>
+        <span>Fish Logger v1.1</span>
         <span>
           © {new Date().getFullYear()} TTL &amp; SEM — engineering team
         </span>

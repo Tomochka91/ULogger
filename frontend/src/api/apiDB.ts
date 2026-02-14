@@ -90,22 +90,41 @@ export const getDBSettings = async (): Promise<DBSettings> => {
  * - Apply settings without persistence
  * - Save settings permanently
  *
- * Notes:
- * - Backend uses `success` flag to indicate logical success/failure.
- * - On failure, a `RequestError` is thrown even if HTTP status is 200.
+ * Transport behavior:
+ * - Uses unified `request()` helper
+ * - Supports request cancellation via optional `AbortSignal`
+ * - If aborted, `fetch` throws `AbortError`
+ *   (must be handled by caller, e.g. via `isAbortError`)
  *
- * @param action - DB action request payload (action + settings).
- * @returns Promise<DbActionResponse> - raw ApiResponse with success/error.
- * @throws RequestError - when backend reports a logical error.
+ * Logical error handling:
+ * - Backend uses `success` flag to indicate business-level success/failure
+ * - If `success === false`, a `RequestError` is thrown
+ *   even if HTTP status is 200
+ *
+ * Error model:
+ * - HTTP errors (non-2xx) are normalized by `request()`
+ * - Logical errors (success=false) are converted into `RequestError`
+ * - Abort errors propagate as `AbortError`
+ *
+ * @param action - DB action request payload (action + settings)
+ * @param signal - Optional AbortSignal for cancelling the request
+ *
+ * @returns Promise<DbActionResponse> - Parsed backend response
+ *
+ * @throws RequestError - when backend reports a logical failure
+ * @throws AbortError   - when request is cancelled via AbortController
+ *
  * @endpoint POST /db/settings
  */
 
 export const postDBSettings = async (
-  action: DBActionRequest
+  action: DBActionRequest,
+  signal?: AbortSignal,
 ): Promise<DbActionResponse> => {
   const data = await request<DbActionResponse>("/db/settings", {
     method: "POST",
     body: JSON.stringify(action),
+    signal,
   });
 
   if (!data.success) {

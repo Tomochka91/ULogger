@@ -2,6 +2,7 @@ import type { SxProps, Theme } from "@mui/material/styles";
 
 import { AppButton } from "./AppButton";
 import { LoaderMini } from "../loader/LoaderMini";
+import { Box } from "@mui/material";
 
 /**
  * Button for testing connections or configurations.
@@ -37,7 +38,7 @@ export function TestButton({
     <AppButton
       type="button"
       variant="outlined"
-      disabled={disabled || loading}
+      disabled={disabled}
       onClick={onClick}
       sx={{
         flex: 1,
@@ -52,7 +53,16 @@ export function TestButton({
         ...sx,
       }}
     >
-      {loading ? <LoaderMini /> : label}
+      {loading ? (
+        <Box
+          sx={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}
+        >
+          <LoaderMini />
+          {label}
+        </Box>
+      ) : (
+        label
+      )}
     </AppButton>
   );
 }

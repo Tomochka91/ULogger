@@ -7,44 +7,70 @@ import type { LoggerFormValues } from "../loggerForm.types";
 /**
  * src/shared/components/form/AddLoggerForm/mappers/mapParserFormToSettings.ts
  *
- * AddLoggerForm value mappers.
+ * EasySerial parser value mapper.
  *
- * This module contains small, focused mapping functions that:
- * - adapt form values to API payloads
- * - adapt API models back to form-friendly values
- * - extract nested settings for specialized operations (e.g. parser testing)
+ * This module contains focused mapping logic that adapts
+ * the EasySerial parser subtree from RHF form state
+ * into a backend-friendly DTO (`EasySerialParserSettings`).
  *
- * General rule:
- * - Form state prefers empty strings for inputs
- * - API payload prefers nulls for optional fields
+ * Responsibilities:
+ * - Convert form-friendly values (empty strings, partial numbers)
+ *   into normalized API payload
+ * - Enforce numeric indices for parser fields
+ * - Convert empty `format` strings to `null`
+ * - Guarantee structural completeness for backend contract
+ *
+ * Design notes:
+ * - The function accepts ONLY the `easy_serial.parser` subtree,
+ *   not the full `LoggerFormValues`.
+ *   This improves separation of concerns and avoids unnecessary
+ *   coupling to unrelated form state.
+ *
+ * - Form state prefers empty strings for inputs,
+ *   while API prefers `null` for optional values.
+ *
+ * - The mapper is pure and side-effect free.
  */
 
-/* -------------------------------- Mappers -------------------------------- */
+/**
+ * ParserForm
+ *
+ * Strictly typed representation of the EasySerial parser subtree
+ * extracted from `LoggerFormValues`.
+ *
+ * We use `NonNullable` twice because:
+ * - `easy_serial` may be optional in the root form
+ * - `parser` may be optional inside `easy_serial`
+ *
+ * This guarantees that the mapper always receives
+ * a concrete parser object.
+ */
+
+type ParserForm = NonNullable<
+  NonNullable<LoggerFormValues["easy_serial"]>["parser"]
+>;
+
 /**
  * mapParserFormToSettings
  *
- * Extracts EasySerial parser settings from form values.
+ * Maps EasySerial parser form subtree into API payload.
  *
- * Logic:
- * - Reads parser section from `easy_serial` config
- * - Normalizes optional fields
- * - Ensures numeric index for parser fields
- * - Converts empty format to null
+ * Transformations:
+ * - `preamble`: empty → null
+ * - `format`: empty → null
+ * - `index`: coerced to number
+ * - Missing nested values replaced with safe defaults
  *
  * Used by:
  * - TestEasySerialParser
- * - Backend parser test endpoint
+ * - Backend parser validation endpoint
  *
- * Notes:
- * - Function is safe to call only when logger type is "easy_serial"
- * - Missing fields are replaced with sane defaults
+ * This function assumes the logger type is "easy_serial".
  */
 
 export function mapParserFormToSettings(
-  values: LoggerFormValues,
+  parser: ParserForm,
 ): EasySerialParserSettings {
-  const parser = values.easy_serial?.parser;
-
   return {
     preamble: parser?.preamble ?? null,
     terminator: parser?.terminator ?? "",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Controller, useFormContext } from "react-hook-form";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
 import { Box, Divider, FormControl, MenuItem } from "@mui/material";
 
 import { FormRow } from "../../FormRow/FormRow";
@@ -120,7 +120,7 @@ export function CounterTab() {
   const { control, watch, clearErrors, setValue } =
     useFormContext<LoggerFormValues>();
 
-  const type = watch("type");
+  const type = useWatch({ control, name: "type" });
   const extCounterEnabled = !!watch("mbox.ext_counter");
   const selectedConnectionId = watch("mbox.counter_connection_id");
   const currentDeviceId = watch("mbox.counter_device_id");
@@ -263,7 +263,11 @@ export function CounterTab() {
     if (!extCounterEnabled) {
       clearErrors(MBOX_COUNTER_DEFAULT_PATHS.map(([path]) => path));
       MBOX_COUNTER_DEFAULT_PATHS.forEach(([path, value]) => {
-        setValue(path, value);
+        setValue(path, value, {
+          shouldDirty: false,
+          shouldTouch: false,
+          shouldValidate: false,
+        });
       });
     }
   }, [extCounterEnabled, clearErrors, setValue]);

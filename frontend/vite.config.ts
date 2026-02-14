@@ -5,13 +5,4 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   base: "/logger/ui/",
-  // server: {
-  //   proxy: {
-  //     // любые запросы на /logger проксируются на твой бэкенд
-  //     "/logger": {
-  //       target: "http://192.168.1.53:8000",
-  //       changeOrigin: true,
-  //     },
-  //   },
-  // },
 });

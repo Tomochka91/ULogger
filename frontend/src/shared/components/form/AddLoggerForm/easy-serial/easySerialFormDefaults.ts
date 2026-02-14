@@ -43,7 +43,7 @@ export const defaultEasySerialSettings: EasySerialSettings = {
     stopbits: 1,
     flowcontrol: "None",
     autoconnect: false,
-    timeout: 1,
+    timeout: 0.5,
   },
   parser: {
     preamble: "",

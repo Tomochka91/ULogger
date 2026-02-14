@@ -1,61 +1,46 @@
-import React, { createContext } from "react";
+import { createContext } from "react";
 
 import { type LoggerFormValues } from "../../components/form/AddLoggerForm/loggerForm.types";
 
 /**
  * src/shared/context/addLoggerForm/loggerFormContext.tsx
  *
- * Logger form context definition.
+ * Logger form draft context definition.
  *
- * This module defines the persisted state shape for the Add/Edit Logger form
+ * This module defines the persisted draft mechanism for the Add/Edit Logger form
  * and exports a typed React Context instance.
  *
- * The context is responsible only for holding state and exposing a setter.
- * Business logic and mutations are expected to live in hooks or providers.
+ * The purpose of this context is to preserve form values between:
+ * - tab navigation
+ * - component unmount/mount
+ * - page switches
+ *
+ * It does NOT expose raw React state anymore.
+ * Instead, it provides an abstraction layer:
+ * - getDraft(): returns the latest persisted form values
+ * - setDraft(values): updates the persisted draft snapshot
  *
  * Responsibilities:
- * - Define the persisted logger form state type
- * - Define the public context value shape (state + setter)
+ * - Define the persisted draft value shape
+ * - Define the public context API (getDraft / setDraft)
  * - Create and export a typed React context
  *
- * Design notes:
- * - The default context value is `undefined` to enforce correct usage.
- * - Consumers are expected to access this context via a custom hook
- *   (e.g. `useLoggerFormState()`), which should throw when the provider is missing.
- */
-
-/* --------------------------------- Types ---------------------------------- */
-/**
- * LoggerFormPersistedState
+ * Architecture notes:
+ * - Draft persistence is intentionally decoupled from React Hook Form
+ *   internal state to prevent global re-renders on every field change.
+ * - Draft updates are throttled/debounced externally (see DraftSaver).
+ * - Consumers must use a custom hook (useLoggerFormState)
+ *   to ensure the provider exists.
  *
- * Persisted snapshot of Add/Edit Logger form data.
- *
- * State:
- * - values: current form values compatible with AddLoggerForm
- *
- */
-
-export type LoggerFormPersistedState = {
-  values: LoggerFormValues;
-};
-
-/* -------------------------------- Context --------------------------------- */
-/**
- * LoggerFormStateContext
- *
- * Typed React context used to share persisted logger form state.
- *
- * Exposes:
- * - state: current persisted form state
- * - setState: React state setter for updating persisted state
- *
- * Default value is `undefined` so consumers can detect missing provider.
+ * Design decision:
+ * - Default context value is `undefined` to enforce proper provider usage.
+ * - The custom hook should throw if used outside LoggerFormStateProvider.
  */
 
 export const LoggerFormStateContext = createContext<
   | {
-      state: LoggerFormPersistedState;
-      setState: React.Dispatch<React.SetStateAction<LoggerFormPersistedState>>;
+      getDraft: () => LoggerFormValues;
+      setDraft: (values: LoggerFormValues) => void;
     }
   | undefined
 >(undefined);

@@ -1,69 +1,200 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import {
-  Box,
-  Divider,
-  FormControl,
-  IconButton,
-  InputAdornment,
-  MenuItem,
-} from "@mui/material";
-import { BsEye, BsEyeSlash, BsTrash } from "react-icons/bs";
+  Controller,
+  FormProvider,
+  useForm,
+  useWatch,
+  type Control,
+} from "react-hook-form";
+import { Box, Divider, FormControl, MenuItem } from "@mui/material";
 
 import { FormRow } from "../FormRow/FormRow";
 import { FormSelect } from "../FormSelect/FormSelect";
 import { HelperText } from "../FormHelperText/HelperText";
-import { FormAutocomplete } from "../FormAutocomplete/FormAutocomplete";
-import { FormInput } from "../FormInput/FormInput";
-import { defaultAutocompleteSlotProps } from "../FormAutocomplete/AutocompleteSlotProps";
 import { FormCheckbox } from "../FormCheckBox/FormCheckBox";
-import { ClearButton } from "../../ui/button/ClearButton";
 import { TypeSettings } from "./TypeSettings";
 import { getLoggerList } from "../../../../api/apiConnections";
-import { SaveButton } from "../../ui/button/SaveButton";
-import { mapLoggerToFormValues } from "./mappers/mapLoggerToFormValues";
 import { ConfirmDialog } from "../../ui/dialog/ConfirmDialog";
 import { useDeleteLogger } from "../../../hooks/useDeleteLogger";
 import { useSaveLogger } from "../../../hooks/useSaveLogger";
 import { useLoggerFormState } from "../../../hooks/useLoggerFormState";
 import { createLoggerDefaultValues } from "./loggerDefaults";
-import { PasswordInput } from "../PasswordInput/PasswordInput";
-import { type LoggerList } from "../../../types";
+import { type Logger, type LoggerList } from "../../../types";
 import type { UsedLoggerType } from "./loggerRegistry";
 import type { LoggerFormValues } from "./loggerForm.types";
+import { DbSettings } from "./DBSettings";
+import { LoggerNameSettings } from "./LoggerNameSettings";
+import { ActionBar } from "./ActionBar";
 
 /**
  * src/shared/components/form/AddLoggerForm/AddLoggerForm.tsx
  *
- * Add / Edit logger form.
+ * Add / Edit Logger Form (main coordinator component).
  *
- * This component is the main entry point for creating, updating and deleting
- * logger configurations.
+ * This component orchestrates the entire lifecycle of creating,
+ * editing and deleting logger configurations.
  *
- * What it does (high level):
- * - Initializes RHF form from persisted local state (useLoggerFormState)
- * - Loads existing loggers list for autocomplete + edit mode
- * - Supports switching logger type while keeping common fields
- * - Renders logger-specific settings via <TypeSettings />
- * - Saves form values through useSaveLogger
- * - Deletes selected logger through useDeleteLogger (with confirm dialog)
+ * Architecture overview
+ * ----------------------
  *
- * Key logic rules:
- * - Common fields (name/db/auth/enabled/autostart) are preserved on type switch
- * - Logger-specific configs are mutually exclusive (one is active, others null)
- * - DB credentials/table are required only when "DB writing" (enabled) is true
+ * The form is built on React Hook Form (RHF) and uses a ref-backed
+ * draft persistence mechanism (LoggerFormStateProvider) to survive:
+ * - route navigation
+ * - component unmount/mount
+ * - internal tab switching
+ *
+ * The component itself is intentionally split into smaller,
+ * isolated sections to prevent unnecessary re-renders.
+ *
+ *
+ * Core responsibilities
+ * ---------------------
+ *
+ * 1) Form initialization
+ *    - Initializes RHF with persisted draft values via `getDraft()`
+ *    - Uses `mode: "onChange"` for live validation
+ *
+ * 2) Draft persistence
+ *    - <DraftSaver /> subscribes to full form values via `useWatch`
+ *    - Persists them to ref-backed store using a debounce (500ms)
+ *    - Does NOT trigger global re-renders
+ *
+ * 3) Existing logger handling
+ *    - Loads logger list via React Query
+ *    - Provides autocomplete options
+ *    - Resolves selected logger by name
+ *    - Stores selected logger in local state
+ *
+ * 4) Save logic
+ *    - Delegates to `useSaveLogger(selectedLogger)`
+ *    - Automatically decides create vs update
+ *    - Resets to NEW_LOGGER_DEFAULTS after successful creation
+ *
+ * 5) Delete logic
+ *    - Opens confirmation dialog
+ *    - Delegates deletion to `useDeleteLogger`
+ *    - Clears selection and resets form after successful delete
+ *
+ *
+ * Section decomposition (performance-driven)
+ * ------------------------------------------
+ *
+ * The form is intentionally split into independent components:
+ *
+ * - <LoggerNameSettings />
+ *   Owns:
+ *     - `name`
+ *     - autocomplete
+ *     - edit-mode selection
+ *     - delete trigger
+ *
+ * - Type selector (inline here)
+ *   Owns:
+ *     - `type`
+ *     - merged defaults on type change
+ *
+ * - <DbSettings />
+ *   Owns:
+ *     - db_user
+ *     - db_password
+ *     - table_name
+ *     - enabled
+ *   Uses `useWatch` internally for conditional validation.
+ *
+ * - <TypeSettings />
+ *   Subscribes only to `type` via `useWatch`
+ *   Renders logger-specific configuration sections.
+ *
+ * - <ActionBar />
+ *   Subscribes only to form validity via `useFormState`
+ *   Renders Save / Reset buttons.
+ *
+ *
+ * Reset behavior
+ * --------------
+ *
+ * NEW_LOGGER_DEFAULTS:
+ * - Used when:
+ *   - Clearing form
+ *   - Switching from existing logger to new logger
+ *   - After successful creation
+ *
+ * Type switching:
+ * - Rebuilds defaults for new type
+ * - Preserves common fields:
+ *     name, db_*, enabled, autostart
+ * - Applies special rule for Mbox `query_template`
+ *
+ *
+ * Performance design goals
+ * ------------------------
+ *
+ * - Avoid top-level `watch()` subscriptions in AddLoggerForm
+ * - Keep subscriptions local to the components that need them
+ * - Use ref-backed draft store instead of React state
+ * - Debounce draft updates
+ * - Isolate re-renders to small sections
+ *
+ * Result:
+ * - Typing in fields does not re-render the entire form
+ * - Changing logger type re-renders only relevant sections
+ * - Save button re-renders only when validity changes
  */
 
 /* -------------------------------- Constants -------------------------------- */
 /**
  * NEW_LOGGER_DEFAULTS
  *
- * Default form state for a new logger.
- * Used for "Reset" and for empty selection in autocomplete.
+ * Default form snapshot for a brand-new logger.
+ *
+ * Used when:
+ * - Resetting the form
+ * - Clearing selection
+ * - After successful creation
+ *
+ * Must remain in sync with logger registry defaults.
  */
 
 const NEW_LOGGER_DEFAULTS = createLoggerDefaultValues("easy_serial");
+
+/**
+ * DraftSaver
+ *
+ * Internal helper component responsible for persisting
+ * the current form snapshot into the external draft store.
+ *
+ * Implementation:
+ * - Subscribes to full form state via `useWatch({ control })`
+ * - Debounces updates (500ms)
+ * - Writes to ref-backed store (setDraft)
+ *
+ * Important:
+ * - Updating draft does NOT trigger re-renders,
+ *   because storage is implemented via `useRef` in the provider.
+ * - Guard `if (!values) return;` prevents writing transient states.
+ */
+
+interface DraftSaverProps {
+  control: Control<LoggerFormValues>;
+  setDraft: (values: LoggerFormValues) => void;
+}
+
+function DraftSaver({ control, setDraft }: DraftSaverProps) {
+  const values = useWatch<LoggerFormValues>({ control });
+
+  useEffect(() => {
+    if (!values) return;
+
+    const timeout = setTimeout(() => {
+      setDraft(values as LoggerFormValues);
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [values, setDraft]);
+
+  return null;
+}
 
 /* -------------------------------- Component -------------------------------- */
 /**
@@ -89,47 +220,21 @@ const NEW_LOGGER_DEFAULTS = createLoggerDefaultValues("easy_serial");
  */
 
 export function AddLoggerForm() {
-  const { state, setState } = useLoggerFormState();
+  const [selectedLogger, setSelectedLogger] = useState<Logger | null>(null);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+
+  const { getDraft, setDraft } = useLoggerFormState();
 
   /**
    * RHF setup:
-   * - defaultValues come from persisted state to keep form "sticky"
    * - mode "onChange" enables live validity updates for Save button
    */
   const methods = useForm<LoggerFormValues>({
-    defaultValues: state.values as LoggerFormValues,
+    defaultValues: getDraft(),
     mode: "onChange",
   });
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    getValues,
-    formState: { errors, isValid },
-  } = methods;
-
-  /**
-   * watchedValues:
-   * - full form subscription used to persist state on any change
-   */
-  const watchedValues = useWatch<LoggerFormValues>({ control });
-
-  /**
-   * frequently used derived values
-   */
-  const enabled = watch("enabled"); // controls conditional validation for DB fields
-  const type = watch("type"); // controls <TypeSettings />
-  const selectedLoggerName = watch("name"); // used to match selected logger from list
-
-  /**
-   * Persist form changes into external store.
-   * This keeps form values between tab navigation / component remounts.
-   */
-  useEffect(() => {
-    setState({ values: watchedValues as LoggerFormValues });
-  }, [watchedValues, setState]);
+  const { control, handleSubmit, reset, getValues } = methods;
 
   /**
    * Load existing loggers list for autocomplete and edit mode.
@@ -161,33 +266,21 @@ export function AddLoggerForm() {
   );
 
   /**
-   * Password masking UI-only state.
-   */
-  const [showPassword, setShowPassword] = useState(false);
-  const togglePassword = () => setShowPassword((prev) => !prev);
-
-  /**
    * Reset handler:
    * - resets RHF to NEW_LOGGER_DEFAULTS
    * - syncs external persisted state
    */
   const onClear = () => {
     reset(NEW_LOGGER_DEFAULTS);
-    setState({ values: NEW_LOGGER_DEFAULTS });
+    setDraft(NEW_LOGGER_DEFAULTS);
   };
-
-  /**
-   * Selected logger object (if name matches an existing logger).
-   * When present → edit mode and delete action become available.
-   */
-  const selectedLoggerObj = getLoggerByName(selectedLoggerName);
 
   /**
    * Save handler:
    * - useSaveLogger decides create vs update based on selectedLoggerObj
    * - after successful create, reset to new defaults
    */
-  const { saveLogger, isSaving, isEditMode } = useSaveLogger(selectedLoggerObj);
+  const { saveLogger, isSaving, isEditMode } = useSaveLogger(selectedLogger);
 
   const onSubmit = (values: LoggerFormValues) => {
     console.log(values);
@@ -205,12 +298,11 @@ export function AddLoggerForm() {
    * - open confirm dialog only when a logger is selected
    * - block closing dialog while delete request is in-flight
    */
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
   const { removeLogger, isDeleting } = useDeleteLogger();
 
-  const handleOpenConfirmDialog = () => {
-    if (!selectedLoggerObj) return;
+  const handleOpenConfirmDialog = (logger: Logger) => {
+    setSelectedLogger(logger);
     setIsConfirmDialogOpen(true);
   };
 
@@ -220,11 +312,12 @@ export function AddLoggerForm() {
   };
 
   const handleConfirmDelete = () => {
-    if (!selectedLoggerObj || selectedLoggerObj.id == null) return;
+    if (!selectedLogger || selectedLogger.id == null) return;
 
-    removeLogger(selectedLoggerObj.id, {
+    removeLogger(selectedLogger.id, {
       onSuccess: () => {
         setIsConfirmDialogOpen(false);
+        setSelectedLogger(null);
         reset(NEW_LOGGER_DEFAULTS);
       },
     });
@@ -232,6 +325,7 @@ export function AddLoggerForm() {
 
   return (
     <FormProvider {...methods}>
+      <DraftSaver control={control} setDraft={setDraft} />
       <Box
         component="form"
         onSubmit={handleSubmit(onSubmit)}
@@ -259,79 +353,14 @@ export function AddLoggerForm() {
           }}
         >
           <Box>
-            <FormRow label="Logger name" labelWidth="25%">
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--gap-standart)",
-                }}
-              >
-                <Controller
-                  name="name"
-                  control={control}
-                  rules={{ required: "Logger name is required" }}
-                  render={({ field }) => {
-                    const { value, onChange, ref } = field;
-
-                    const handleSelectLogger = (
-                      _event: React.SyntheticEvent,
-                      newInputValue: string | null,
-                    ) => {
-                      const name = newInputValue ?? "";
-                      onChange(name);
-
-                      if (!name) {
-                        reset(NEW_LOGGER_DEFAULTS);
-                        return;
-                      }
-
-                      const logger = getLoggerByName(name);
-
-                      if (logger) {
-                        const mapped = mapLoggerToFormValues(logger);
-                        reset(mapped);
-                      }
-                    };
-
-                    return (
-                      <FormAutocomplete
-                        fullWidth
-                        freeSolo
-                        forcePopupIcon
-                        options={autocompleteOptions}
-                        inputValue={value}
-                        onInputChange={handleSelectLogger}
-                        slotProps={defaultAutocompleteSlotProps}
-                        renderInput={(params) => (
-                          <FormInput
-                            {...params}
-                            inputRef={ref}
-                            value={params.inputProps.value ?? ""}
-                            placeholder="New logger"
-                            helperText={errors.name?.message ?? " "}
-                          />
-                        )}
-                      />
-                    );
-                  }}
-                />
-
-                {selectedLoggerObj && (
-                  <IconButton
-                    onClick={handleOpenConfirmDialog}
-                    size="small"
-                    sx={{
-                      color: "var(--color-indian-red)",
-                      flexShrink: 0,
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    <BsTrash color="var(--color-indian-red)" />
-                  </IconButton>
-                )}
-              </Box>
-            </FormRow>
+            <LoggerNameSettings
+              control={control}
+              reset={reset}
+              autocompleteOptions={autocompleteOptions}
+              getLoggerByName={getLoggerByName}
+              onSelectedLoggerChange={setSelectedLogger}
+              onRequestDelete={handleOpenConfirmDialog}
+            />
 
             <FormRow label="Logger type" labelWidth="25%">
               <FormControl fullWidth>
@@ -363,7 +392,7 @@ export function AddLoggerForm() {
                                 : "",
                           };
                           reset(merged);
-                          setState({ values: merged });
+                          setDraft(merged);
                         }}
                       >
                         <MenuItem value={"easy_serial"}>Easy Serial</MenuItem>
@@ -411,154 +440,23 @@ export function AddLoggerForm() {
             sx={{ marginInline: "2rem" }}
           />
 
-          <Box>
-            <Controller
-              name="db_user"
-              control={control}
-              rules={{
-                validate: (value) =>
-                  enabled
-                    ? value
-                      ? true
-                      : "Required when DB writing enabled"
-                    : true,
-              }}
-              render={({ field, fieldState }) => (
-                <FormRow label="DB user" labelWidth="25%">
-                  <FormInput
-                    {...field}
-                    value={field.value ?? ""}
-                    id="db-user"
-                    fullWidth
-                    helperText={fieldState.error?.message ?? " "}
-                  />
-                </FormRow>
-              )}
-            />
-
-            <Controller
-              name="db_password"
-              control={control}
-              rules={{
-                validate: (value) =>
-                  enabled
-                    ? value
-                      ? true
-                      : "Required when DB writing enabled"
-                    : true,
-              }}
-              render={({ field, fieldState }) => (
-                <FormRow label="DB password" labelWidth="25%">
-                  <PasswordInput
-                    {...field}
-                    value={field.value ?? ""}
-                    id="logform-auth-secret"
-                    fullWidth
-                    type="text"
-                    inputMode="text"
-                    autoComplete="off"
-                    masked={!showPassword}
-                    helperText={fieldState.error?.message ?? " "}
-                    slotProps={{
-                      input: {
-                        endAdornment: (
-                          <InputAdornment
-                            position="end"
-                            sx={{ ml: 0, pr: "1.4rem" }}
-                          >
-                            <IconButton
-                              edge="end"
-                              onClick={togglePassword}
-                              tabIndex={-1}
-                              sx={{
-                                p: 0,
-                                "& svg": { width: "1.8rem", height: "1.8rem" },
-                              }}
-                            >
-                              {showPassword ? <BsEyeSlash /> : <BsEye />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                  />
-                </FormRow>
-              )}
-            />
-
-            <Controller
-              name="table_name"
-              control={control}
-              rules={{
-                validate: (value) =>
-                  enabled
-                    ? value
-                      ? true
-                      : "Required when DB writing enabled"
-                    : true,
-              }}
-              render={({ field, fieldState }) => (
-                <FormRow label="DB table" labelWidth="25%">
-                  <FormInput
-                    {...field}
-                    value={field.value ?? ""}
-                    id="table-name"
-                    fullWidth
-                    helperText={fieldState.error?.message ?? " "}
-                  />
-                </FormRow>
-              )}
-            />
-
-            <Box
-              sx={{
-                display: "flex",
-                gap: "var(--gap-mini)",
-                alignItems: "center",
-              }}
-            >
-              <Controller
-                name="enabled"
-                control={control}
-                render={({ field }) => (
-                  <FormRow label="DB writing" labelWidth="25%">
-                    <FormCheckbox
-                      id="enable-db-writing"
-                      checked={!!field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                    />
-                  </FormRow>
-                )}
-              />
-              <HelperText>{errors.enabled?.message ?? " "}</HelperText>
-            </Box>
-          </Box>
+          <DbSettings />
         </Box>
 
-        <TypeSettings type={type} />
+        <TypeSettings />
 
-        <Box
-          sx={{
-            display: "inline-flex",
-            gap: "var(--gap-standart)",
-            flexShrink: 0,
-          }}
-        >
-          <ClearButton onClick={onClear} label="Reset" />
-          <SaveButton
-            loading={isSaving}
-            disabled={!isValid}
-            label={isEditMode ? "Update logger" : "Create logger"}
-            startIcon={true}
-          />
-        </Box>
+        <ActionBar
+          onClear={onClear}
+          isSaving={isSaving}
+          isEditMode={isEditMode}
+        />
       </Box>
 
       <ConfirmDialog
         open={isConfirmDialogOpen}
         loading={isDeleting}
         title="Delete logger"
-        description={`Are you sure you want to delete this logger: '${selectedLoggerObj?.name}'?`}
+        description={`Are you sure you want to delete this logger: '${selectedLogger?.name}'?`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onClose={handleCloseConfirmDialog}

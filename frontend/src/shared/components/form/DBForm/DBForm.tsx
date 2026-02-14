@@ -23,6 +23,7 @@ import { TestButton } from "../../ui/button/TestButton";
 import { SaveButton } from "../../ui/button/SaveButton";
 import { PasswordInput } from "../PasswordInput/PasswordInput";
 import type { DBSettings } from "../../../types";
+import { isAbortError } from "../../../utils/apiHelpers";
 
 /**
  * src/shared/components/form/DBForm/DBForm.tsx
@@ -37,18 +38,43 @@ import type { DBSettings } from "../../../types";
  * - Validate inputs via `dbFormValidation` (react-hook-form rules)
  * - Load current settings from backend (`getDBSettings`)
  * - Provide "Test" and "Save" actions via mutation hooks
- * - Enforce workflow: Save is enabled only after successful Test
+ * - Enforce workflow: Save is enabled only after a successful Test
+ * - Allow cancelling an in-flight Test request without extra UI controls
  *
  * Data flow:
- * - On mount: fetch settings via React Query and `reset()` the form values.
- * - On Test: run `useDBSettingsTest()` mutation and remember tested values.
- * - On change after Test: invalidate tested state to require re-test.
- * - On Save: run `useDBSettingsSave()` mutation (form submit).
+ * - On mount:
+ *   - Fetch settings via React Query (`getDBSettings`)
+ *   - Hydrate the form via `reset()` once data is available
+ *
+ * - On Test (button click):
+ *   - Uses `handleSubmit` to validate before testing
+ *   - Runs `useDBSettingsTest()` mutation with current form values
+ *   - On success:
+ *     - sets `isTested = true`
+ *     - stores `testedValues` snapshot to lock-in the "tested" state
+ *   - On error:
+ *     - ignores AbortError (user-initiated cancellation)
+ *     - otherwise resets `isTested` to false
+ *
+ * - On Cancel (same button while testing):
+ *   - When `isTesting === true`, the Test button label becomes "Cancel"
+ *   - Clicking it calls `cancelTest()` which aborts the request via AbortController
+ *   - Abort errors are filtered out using `isAbortError` (no error UI, no state reset)
+ *
+ * - On change after Test:
+ *   - Watches form values (`useWatch`)
+ *   - If current values diverge from `testedValues`, resets `isTested` to false
+ *   - This enforces: any changes require re-test before saving
+ *
+ * - On Save (form submit):
+ *   - Runs `useDBSettingsSave()` mutation
+ *   - Save is disabled until `isTested` is true and values remain unchanged
  *
  * Design notes:
  * - Uses react-hook-form as a local form state manager.
  * - Uses React Query for fetching the current DB settings.
  * - Uses custom hooks for test/save mutations to keep API logic outside UI.
+ * - Test cancellation uses Fetch AbortController; AbortError is treated as a non-error.
  * - Password visibility is handled via `PasswordInput` with CSS masking.
  */
 
@@ -115,7 +141,7 @@ export function DBForm() {
 
   const watchedValues = useWatch({ control });
 
-  const { testMutate, isTesting } = useDBSettingsTest();
+  const { testMutate, isTesting, cancelTest } = useDBSettingsTest();
   const { saveMutate, isSaving } = useDBSettingsSave();
 
   /**
@@ -131,15 +157,27 @@ export function DBForm() {
    */
   const handleTestSettings = handleSubmit((values) => {
     setIsTested(false);
+
     testMutate(values, {
       onSuccess: () => {
         setIsTested(true);
         setTestedValues(values);
       },
-      onError: () => setIsTested(false),
+      onError: (err) => {
+        if (isAbortError(err)) return;
+        setIsTested(false);
+      },
     });
     console.log("DB Form Data to test:", values);
   });
+
+  const handleTestClick = () => {
+    if (isTesting) {
+      cancelTest();
+      return;
+    }
+    handleTestSettings();
+  };
 
   /**
    * handleSaveSettings
@@ -337,7 +375,8 @@ export function DBForm() {
         <TestButton
           loading={isTesting}
           disabled={isSubmitting || isLoading}
-          onClick={handleTestSettings}
+          onClick={handleTestClick}
+          label={isTesting ? "Cancel" : "Test connection"}
         />
         <SaveButton
           loading={isSaving}

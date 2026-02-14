@@ -68,6 +68,7 @@ export function DBWriterTab() {
                 id="db-writer"
                 fullWidth
                 multiline
+                minRows={5}
                 maxRows={15}
               />
             </FormRow>

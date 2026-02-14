@@ -1,6 +1,6 @@
 import { Stack } from "@mui/material";
 
-import { ClearButton } from "../ui/button/ClearButton";
+import { ResetButton } from "../ui/button/ResetButton";
 import { AutoscrollButton } from "../ui/button/AutoscrollButton";
 
 /**
@@ -49,7 +49,7 @@ export function DebugControls({
 }: DebugControlsProps) {
   return (
     <Stack direction="row" justifyContent="space-between" alignItems="center">
-      <ClearButton onClick={onClear} label="Clear logs" />
+      <ResetButton onClick={onClear} label="Clear logs" />
       <AutoscrollButton onToggle={onToggleAutoscroll} autoscroll={autoscroll} />
     </Stack>
   );

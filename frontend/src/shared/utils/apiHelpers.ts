@@ -104,3 +104,13 @@ export function getErrorMessage(err: unknown, fallback: string): string {
 
   return fallback;
 }
+
+/**
+ * Type guard for detecting fetch AbortError.
+ *
+ * Used to ignore user-triggered request cancellations
+ * in mutation error handlers.
+ */
+export function isAbortError(err: unknown): err is DOMException {
+  return err instanceof DOMException && err.name === "AbortError";
+}

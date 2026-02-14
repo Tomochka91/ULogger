@@ -44,9 +44,9 @@ export const defaultModbusRtuSettings: ModbusRTUSettings = {
     stopbits: 1,
     flowcontrol: "None",
     autoconnect: false,
-    timeout: 1,
+    timeout: 0.5,
   },
-  poll_interval: 1,
+  poll_interval: 0.5,
   slaves: [],
 };
 
